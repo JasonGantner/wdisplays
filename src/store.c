@@ -1,65 +1,95 @@
 #include "wdisplays.h"
 #include <ctype.h>
+#include <limits.h>
 #include <regex.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <wayland-client-protocol.h>
-#include <limits.h>
-#include <stdbool.h>
+
 #define MAX_NAME_LENGTH 256
 #define MAX_MONITORS_NUM 10
+
 struct wd_head_config;
 struct profile_line {
   int start;
   int end;
 };
+
 char *get_config_file_path() {
-    char defaultPath[PATH_MAX]; // platform based marco PATH_MAX    
-    char wdisplaysPath[PATH_MAX];
-    // if $XDG_CONFIG_HOME is set, use it
-    {
-      const char *configDir = getenv("XDG_CONFIG_HOME");
-      char defaultConfigDir[PATH_MAX];
+  char kanshiConfigPath[PATH_MAX];
+  char wdisplaysPath[PATH_MAX];
+  char defaultConfigDir[PATH_MAX];
+  // if $XDG_CONFIG_HOME is set, use it
+  {
+    char *configDir = getenv("XDG_CONFIG_HOME");
+    if (configDir == NULL) { // fallback to $HOME
+      configDir = getenv("HOME");
       if (configDir == NULL) {
-        const char *homeDir = getenv("HOME");
-        if (homeDir == NULL) {
-          perror("Cannot find home directory");
-          return NULL;
-        }
-        snprintf(defaultConfigDir, sizeof(defaultConfigDir), "%s/.config", homeDir);
+        perror("Cannot find home directory");
+        return NULL;
       } else {
-        snprintf(defaultConfigDir, sizeof(defaultConfigDir), "%s", configDir);
+        // configdir is $HOME/config
+        snprintf(defaultConfigDir, sizeof(defaultConfigDir), "%s/.config",
+                 configDir);
       }
-      snprintf(defaultPath, sizeof(defaultPath), "%s/kanshi/config", defaultConfigDir);
-      snprintf(wdisplaysPath, sizeof(wdisplaysPath), "%s/wdisplays/config", defaultConfigDir);
+    } else {
+      // configDir is $XDG_CONFIG_HOME
+      snprintf(defaultConfigDir, sizeof(defaultConfigDir), "%s", configDir);
     }
+  }
+  // set  default kanshi config path
+  snprintf(kanshiConfigPath, sizeof(kanshiConfigPath), "%s/kanshi/config",
+           defaultConfigDir);
 
-    FILE *wdisplaysFile = fopen(wdisplaysPath, "r");
-    if (wdisplaysFile != NULL) {
-        char line[LINE_MAX]; // LINE_MAX is a platform based marco
+  // look for store_path in wdisplays.conf
+  snprintf(wdisplaysPath, sizeof(wdisplaysPath), "%s/wdisplays.conf",
+           defaultConfigDir);
 
-        // try to match "store_path" term
-        while (fgets(line, sizeof(line), wdisplaysFile) != NULL) {
-            if (strstr(line, "store_path") != NULL) {
-                // if found, extract path
-                char *pathStart = strchr(line, '=');
-                if (pathStart != NULL) {
-                    pathStart++; // skip '='
-                    char *pathEnd = strchr(pathStart, '\n');
-                    if (pathEnd != NULL) {
-                        *pathEnd = '\0'; // replace '\n' with '\0'
-                        fclose(wdisplaysFile);
-                        return strdup(pathStart); // return path
-                    }
-                }
-            }
-        }
-        fclose(wdisplaysFile);
-    }
+  FILE *wdisplaysFile = fopen(wdisplaysPath, "r");
+  if (wdisplaysFile != NULL) {
+    char line[LINE_MAX]; // LINE_MAX is a platform-dependendant macro
 
-    // if store_path is not found in wdisplays config file, return default path
-    return strdup(defaultPath);
+    // try to match "store_path" term
+    while (fgets(line, sizeof(line), wdisplaysFile) != NULL) {
+      if (strstr(line, "store_path") != NULL) {
+        // if found, extract path
+        char *pathStart = strchr(line, '=');
+        if (pathStart != NULL) {
+          pathStart++; // skip '='
+          while (*pathStart == ' ')
+            pathStart++; // skip spaces between '=' and the start of the path
+          char *pathEnd = strchr(
+              pathStart, '\n'); // this fails if store_path is the last line and
+                                // the file doesn't end with a newline
+          size_t pathLen;
+          if (pathEnd != NULL) {
+            pathLen = pathEnd - pathStart;
+          } else { // store_path= is the last line and there's no newline at the
+                   // end of the file
+            pathLen = strnlen(pathStart, PATH_MAX); // read up to PATH_MAX chars
+          }
+          // save path
+          strncpy(kanshiConfigPath, pathStart, pathLen);
+        } else
+          ; //  store_path was not followed by an equal sign on this line
+      } else
+        ; // this line does not contain store_path
+    }     // reached end of file
+    fclose(wdisplaysFile);
+  } else
+    ; // can't open config file, continue
+
+  // look for WDISPLAYS_KANSHI_CONFIG
+  {
+    char *envKanshiConf = getenv("WDISPLAYS_KANSHI_CONFIG");
+    if (envKanshiConf != NULL)
+      strncpy(kanshiConfigPath, envKanshiConf, sizeof(kanshiConfigPath));
+    else
+      ;
+  }
+  return strndup(kanshiConfigPath, PATH_MAX);
 }
 
 struct profile_line match(char **descriptions, int num, char *filename) {
@@ -108,7 +138,8 @@ struct profile_line match(char **descriptions, int num, char *filename) {
         while (isspace(*trimmedBuffer)) {
           trimmedBuffer++; // skip leading spaces
         }
-        sscanf(trimmedBuffer, "output \"%99[^\"]\"", outputName); // extract output name
+        sscanf(trimmedBuffer, "output \"%99[^\"]\"",
+               outputName); // extract output name
 
         // check if the output name is in the descriptions
         bool matched = false;
@@ -148,7 +179,7 @@ struct profile_line match(char **descriptions, int num, char *filename) {
 int store_config(struct wl_list *outputs) {
   char *file_name = get_config_file_path();
   char tmp_file_name[PATH_MAX];
-  sprintf(tmp_file_name,"%s.tmp",file_name);
+  sprintf(tmp_file_name, "%s.tmp", file_name);
 
   char *descriptions[MAX_MONITORS_NUM];
   for (int i = 0; i < MAX_MONITORS_NUM; i++) {
@@ -197,11 +228,12 @@ int store_config(struct wl_list *outputs) {
     if (description_index < MAX_MONITORS_NUM) {
       descriptions[description_index] = strdup(head->description);
       // write output config in given format
-      sprintf(
-          outputConfigs[description_index],
-          "output \"%s\" position %d,%d mode %dx%d@%.4f scale %.2f transform %s",
-          head->description, output->x, output->y, output->width,
-          output->height, output->refresh / 1.0e3, output->scale, trans_str);
+      sprintf(outputConfigs[description_index],
+              "output \"%s\" position %d,%d mode %dx%d@%.4f scale %.2f "
+              "transform %s",
+              head->description, output->x, output->y, output->width,
+              output->height, output->refresh / 1.0e3, output->scale,
+              trans_str);
       description_index++;
     } else {
       free(trans_str);
@@ -226,7 +258,7 @@ int store_config(struct wl_list *outputs) {
       return 1;
     }
     fprintf(file, "\nprofile {\n");
-    for (int i = 0; i<num_of_monitors;  i++) {
+    for (int i = 0; i < num_of_monitors; i++) {
       fprintf(file, "    %s\n", outputConfigs[i]);
       free(outputConfigs[i]);
     }
@@ -252,24 +284,24 @@ int store_config(struct wl_list *outputs) {
     int _i_output = 0;
     while (fgets(_buffer, sizeof(_buffer), file) != NULL) {
       if (_line >= matched_profile.start && _line < matched_profile.end - 1) {
-        if(_i_output>=num_of_monitors){
+        if (_i_output >= num_of_monitors) {
           perror("Null pointer");
           fclose(tmp);
           fclose(file);
           return 1;
         }
-        fprintf(tmp,"    %s\n",outputConfigs[_i_output]);
+        fprintf(tmp, "    %s\n", outputConfigs[_i_output]);
         free(outputConfigs[_i_output]);
 
         _i_output++;
-      } else{
-        fprintf(tmp,"%s",_buffer);
+      } else {
+        fprintf(tmp, "%s", _buffer);
       }
       _line++;
     }
     fclose(file);
     fclose(tmp);
-    
+
     remove(file_name);
     rename(tmp_file_name, file_name);
     free(file_name);
