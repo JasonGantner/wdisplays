@@ -13,6 +13,7 @@ AlignConsecutiveShortCaseStatements:
   Enabled: true
   # AlignCaseArrows: true
   AlignCaseColons: true
+AlignOperands: Align
 AlignTrailingComments: Always
 AllowShortBlocksOnASingleLine: Always
 AllowShortCaseLabelsOnASingleLine: true
@@ -26,6 +27,7 @@ BinPackArguments: true
 BinPackParameters: true
 BreakBeforeBraces: Attach
 BreakBeforeConceptDeclarations: Never
+BreakBeforeBinaryOperators: true
 BreakBeforeTernaryOperators: true
 ColumnLimit: 128
 IndentCaseBlocks: false
@@ -34,7 +36,7 @@ IndentPPDirectives: AfterHash
 InsertBraces: false
 InsertNewlineAtEOF: true
 LineEnding: LF
-PointerAlignment: Left
+PointerAlignment: Right
 QualifierAlignment: Left
 ReferenceAlignment: Right
 ReflowComments: true

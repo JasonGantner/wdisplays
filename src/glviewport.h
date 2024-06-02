@@ -9,8 +9,7 @@
 G_BEGIN_DECLS
 
 #define WD_TYPE_GL_VIEWPORT (wd_gl_viewport_get_type())
-G_DECLARE_DERIVABLE_TYPE(WdGLViewport, wd_gl_viewport, WD, GL_VIEWPORT,
-                         GtkGLArea)
+G_DECLARE_DERIVABLE_TYPE(WdGLViewport, wd_gl_viewport, WD, GL_VIEWPORT, GtkGLArea)
 
 struct _WdGLViewportClass {
   GtkGLAreaClass parent_class;

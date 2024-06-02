@@ -11,16 +11,16 @@
 
 #define BT_UV_VERT_SIZE (2 + 2)
 #define BT_UV_QUAD_SIZE (6 * BT_UV_VERT_SIZE)
-#define BT_UV_MAX (BT_COLOR_QUAD_SIZE * HEADS_MAX)
+#define BT_UV_MAX       (BT_COLOR_QUAD_SIZE * HEADS_MAX)
 
 #define BT_COLOR_VERT_SIZE (2 + 4)
 #define BT_COLOR_QUAD_SIZE (6 * BT_COLOR_VERT_SIZE)
-#define BT_COLOR_MAX (BT_COLOR_QUAD_SIZE * HEADS_MAX)
+#define BT_COLOR_MAX       (BT_COLOR_QUAD_SIZE * HEADS_MAX)
 
 #define BT_LINE_VERT_SIZE (2 + 4)
 #define BT_LINE_QUAD_SIZE (8 * BT_LINE_VERT_SIZE)
-#define BT_LINE_EXT_SIZE (24 * BT_LINE_VERT_SIZE)
-#define BT_LINE_MAX (BT_LINE_EXT_SIZE * (HEADS_MAX + 1))
+#define BT_LINE_EXT_SIZE  (24 * BT_LINE_VERT_SIZE)
+#define BT_LINE_MAX       (BT_LINE_EXT_SIZE * (HEADS_MAX + 1))
 
 enum gl_buffers { TEXTURE_BUFFER, COLOR_BUFFER, LINE_BUFFER, NUM_BUFFERS };
 
@@ -104,9 +104,7 @@ static GLuint gl_make_shader(GLenum type, const char *src) {
       glGetShaderInfoLog(shader, length, NULL, log);
     }
     fprintf(stderr, "glCompileShader: %s\n", log);
-    if (length > 0) {
-      free(log);
-    }
+    if (length > 0) free(log);
   }
   return shader;
 }
@@ -139,81 +137,64 @@ static void gl_link_and_validate(GLint program) {
 
 struct wd_gl_data *wd_gl_setup(void) {
   struct wd_gl_data *res = calloc(1, sizeof(struct wd_gl_data));
-  res->color_program = glCreateProgram();
+  res->color_program     = glCreateProgram();
 
-  res->color_vertex_shader =
-      gl_make_shader(GL_VERTEX_SHADER, color_vertex_shader_src);
+  res->color_vertex_shader = gl_make_shader(GL_VERTEX_SHADER, color_vertex_shader_src);
   glAttachShader(res->color_program, res->color_vertex_shader);
-  res->color_fragment_shader =
-      gl_make_shader(GL_FRAGMENT_SHADER, color_fragment_shader_src);
+  res->color_fragment_shader = gl_make_shader(GL_FRAGMENT_SHADER, color_fragment_shader_src);
   glAttachShader(res->color_program, res->color_fragment_shader);
   gl_link_and_validate(res->color_program);
 
-  res->color_position_attribute =
-      glGetAttribLocation(res->color_program, "position");
-  res->color_color_attribute = glGetAttribLocation(res->color_program, "color");
-  res->color_screen_size_uniform =
-      glGetUniformLocation(res->color_program, "screen_size");
+  res->color_position_attribute  = glGetAttribLocation(res->color_program, "position");
+  res->color_color_attribute     = glGetAttribLocation(res->color_program, "color");
+  res->color_screen_size_uniform = glGetUniformLocation(res->color_program, "screen_size");
 
   res->texture_program = glCreateProgram();
 
-  res->texture_vertex_shader =
-      gl_make_shader(GL_VERTEX_SHADER, texture_vertex_shader_src);
+  res->texture_vertex_shader = gl_make_shader(GL_VERTEX_SHADER, texture_vertex_shader_src);
   glAttachShader(res->texture_program, res->texture_vertex_shader);
-  res->texture_fragment_shader =
-      gl_make_shader(GL_FRAGMENT_SHADER, texture_fragment_shader_src);
+  res->texture_fragment_shader = gl_make_shader(GL_FRAGMENT_SHADER, texture_fragment_shader_src);
   glAttachShader(res->texture_program, res->texture_fragment_shader);
   gl_link_and_validate(res->texture_program);
 
-  res->texture_position_attribute =
-      glGetAttribLocation(res->texture_program, "position");
-  res->texture_uv_attribute = glGetAttribLocation(res->texture_program, "uv");
-  res->texture_screen_size_uniform =
-      glGetUniformLocation(res->texture_program, "screen_size");
-  res->texture_texture_uniform =
-      glGetUniformLocation(res->texture_program, "texture");
-  res->texture_color_transform_uniform =
-      glGetUniformLocation(res->texture_program, "color_transform");
+  res->texture_position_attribute      = glGetAttribLocation(res->texture_program, "position");
+  res->texture_uv_attribute            = glGetAttribLocation(res->texture_program, "uv");
+  res->texture_screen_size_uniform     = glGetUniformLocation(res->texture_program, "screen_size");
+  res->texture_texture_uniform         = glGetUniformLocation(res->texture_program, "texture");
+  res->texture_color_transform_uniform = glGetUniformLocation(res->texture_program, "color_transform");
 
   glGenBuffers(NUM_BUFFERS, res->buffers);
   glBindBuffer(GL_ARRAY_BUFFER, res->buffers[TEXTURE_BUFFER]);
-  glBufferData(GL_ARRAY_BUFFER, BT_UV_MAX * sizeof(float), NULL,
-               GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, BT_UV_MAX * sizeof(float), NULL, GL_DYNAMIC_DRAW);
 
   glBindBuffer(GL_ARRAY_BUFFER, res->buffers[COLOR_BUFFER]);
-  glBufferData(GL_ARRAY_BUFFER, BT_COLOR_MAX * sizeof(float), NULL,
-               GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, BT_COLOR_MAX * sizeof(float), NULL, GL_DYNAMIC_DRAW);
 
   glBindBuffer(GL_ARRAY_BUFFER, res->buffers[LINE_BUFFER]);
-  glBufferData(GL_ARRAY_BUFFER, BT_LINE_MAX * sizeof(float), NULL,
-               GL_DYNAMIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, BT_LINE_MAX * sizeof(float), NULL, GL_DYNAMIC_DRAW);
 
   return res;
 }
 
-static const GLfloat TRANSFORM_RGB[16] = {1, 0, 0, 0, 0, 1, 0, 0,
-                                          0, 0, 1, 0, 0, 0, 0, 1};
+static const GLfloat TRANSFORM_RGB[16] = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
-static const GLfloat TRANSFORM_BGR[16] = {0, 0, 1, 0, 0, 1, 0, 0,
-                                          1, 0, 0, 0, 0, 0, 0, 1};
+static const GLfloat TRANSFORM_BGR[16] = {0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1};
 
-#define PUSH_POINT_COLOR(_start, _a, _b, _color, _alpha)                       \
-  *((_start)++) = (_a);                                                        \
-  *((_start)++) = (_b);                                                        \
-  *((_start)++) = ((_color)[0]);                                               \
-  *((_start)++) = ((_color)[1]);                                               \
-  *((_start)++) = ((_color)[2]);                                               \
+#define PUSH_POINT_COLOR(_start, _a, _b, _color, _alpha)                                                                       \
+  *((_start)++) = (_a);                                                                                                        \
+  *((_start)++) = (_b);                                                                                                        \
+  *((_start)++) = ((_color)[0]);                                                                                               \
+  *((_start)++) = ((_color)[1]);                                                                                               \
+  *((_start)++) = ((_color)[2]);                                                                                               \
   *((_start)++) = (_alpha);
 
-#define PUSH_POINT_UV(_start, _a, _b, _c, _d)                                  \
-  *((_start)++) = (_a);                                                        \
-  *((_start)++) = (_b);                                                        \
-  *((_start)++) = (_c);                                                        \
+#define PUSH_POINT_UV(_start, _a, _b, _c, _d)                                                                                  \
+  *((_start)++) = (_a);                                                                                                        \
+  *((_start)++) = (_b);                                                                                                        \
+  *((_start)++) = (_c);                                                                                                        \
   *((_start)++) = (_d);
 
-static inline float lerp(float x, float y, float a) {
-  return x * (1.f - a) + y * a;
-}
+static inline float lerp(float x, float y, float a) { return x * (1.f - a) + y * a; }
 
 static inline void lerp_color(float out[3], float x[3], float y[3], float a) {
   out[0] = lerp(x[0], y[0], a);
@@ -228,27 +209,23 @@ static inline float ease(float d) {
     d = d * d;
   } else {
     d -= 1.f;
-    d = d * (2.f - d) + 1.f;
+    d  = d * (2.f - d) + 1.f;
   }
   d /= 2.f;
   return d;
 }
 
-void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
-                  uint64_t tick) {
+void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info, uint64_t tick) {
   unsigned int tri_verts = 0;
 
   unsigned int head_count = wl_list_length(&info->heads);
-  if (head_count >= HEADS_MAX)
-    head_count = HEADS_MAX;
+  if (head_count >= HEADS_MAX) head_count = HEADS_MAX;
 
   if (head_count > res->texture_count) {
-    glGenTextures(head_count - res->texture_count,
-                  res->textures + res->texture_count);
+    glGenTextures(head_count - res->texture_count, res->textures + res->texture_count);
     for (int i = res->texture_count; i < head_count; i++) {
       glBindTexture(GL_TEXTURE_2D, res->textures[i]);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                      GL_LINEAR_MIPMAP_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -261,10 +238,10 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
   int i = 0;
   wl_list_for_each_reverse(head, &info->heads, link) {
     float *tri_ptr = res->verts + i * BT_UV_QUAD_SIZE;
-    float x1 = head->active.x_invert ? head->x2 : head->x1;
-    float y1 = head->y_invert ? head->y2 : head->y1;
-    float x2 = head->active.x_invert ? head->x1 : head->x2;
-    float y2 = head->y_invert ? head->y1 : head->y2;
+    float x1       = head->active.x_invert ? head->x2 : head->x1;
+    float y1       = head->y_invert ? head->y2 : head->y1;
+    float x2       = head->active.x_invert ? head->x1 : head->x2;
+    float y2       = head->y_invert ? head->y1 : head->y2;
 
     float sa = 0.f;
     float sb = 1.f;
@@ -276,16 +253,16 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
     float td = tc;
     for (int i = 0; i < head->active.rotation; i++) {
       float tmp = sd;
-      sd = sc;
-      sc = sb;
-      sb = sa;
-      sa = tmp;
+      sd        = sc;
+      sc        = sb;
+      sb        = sa;
+      sa        = tmp;
 
       tmp = td;
-      td = tc;
-      tc = tb;
-      tb = ta;
-      ta = tmp;
+      td  = tc;
+      tc  = tb;
+      tb  = ta;
+      ta  = tmp;
     }
 
     PUSH_POINT_UV(tri_ptr, x1, y1, sa, ta)
@@ -297,8 +274,7 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
 
     tri_verts += 6;
     i++;
-    if (i >= HEADS_MAX)
-      break;
+    if (i >= HEADS_MAX) break;
   }
 
   glClearColor(info->bg_color[0], info->bg_color[1], info->bg_color[2], 1.f);
@@ -309,15 +285,12 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
   if (tri_verts > 0) {
     glUseProgram(res->texture_program);
     glBindBuffer(GL_ARRAY_BUFFER, res->buffers[TEXTURE_BUFFER]);
-    glBufferSubData(GL_ARRAY_BUFFER, 0,
-                    tri_verts * BT_UV_VERT_SIZE * sizeof(float), res->verts);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, tri_verts * BT_UV_VERT_SIZE * sizeof(float), res->verts);
     glEnableVertexAttribArray(res->texture_position_attribute);
     glEnableVertexAttribArray(res->texture_uv_attribute);
-    glVertexAttribPointer(res->texture_position_attribute, 2, GL_FLOAT,
-                          GL_FALSE, BT_UV_VERT_SIZE * sizeof(float),
+    glVertexAttribPointer(res->texture_position_attribute, 2, GL_FLOAT, GL_FALSE, BT_UV_VERT_SIZE * sizeof(float),
                           (void *)(0 * sizeof(float)));
-    glVertexAttribPointer(res->texture_uv_attribute, 2, GL_FLOAT, GL_FALSE,
-                          BT_UV_VERT_SIZE * sizeof(float),
+    glVertexAttribPointer(res->texture_uv_attribute, 2, GL_FLOAT, GL_FALSE, BT_UV_VERT_SIZE * sizeof(float),
                           (void *)(2 * sizeof(float)));
     glUniform2fv(res->texture_screen_size_uniform, 1, screen_size);
     glUniform1i(res->texture_texture_uniform, 0);
@@ -328,42 +301,36 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
       glBindTexture(GL_TEXTURE_2D, res->textures[i]);
       if (head->updated_at == tick) {
         glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, head->tex_stride / 4);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, head->tex_width,
-                     head->tex_height, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-                     head->pixels);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, head->tex_width, head->tex_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, head->pixels);
         glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, 0);
         glGenerateMipmap(GL_TEXTURE_2D);
       }
-      glUniformMatrix4fv(res->texture_color_transform_uniform, 1, GL_FALSE,
-                         head->swap_rgb ? TRANSFORM_RGB : TRANSFORM_BGR);
+      glUniformMatrix4fv(res->texture_color_transform_uniform, 1, GL_FALSE, head->swap_rgb ? TRANSFORM_RGB : TRANSFORM_BGR);
       glDrawArrays(GL_TRIANGLES, i * 6, 6);
       i++;
-      if (i >= HEADS_MAX)
-        break;
+      if (i >= HEADS_MAX) break;
     }
   }
 
   tri_verts = 0;
 
-  int j = 0;
-  i = 0;
-  bool any_clicked = false;
+  int j                = 0;
+  i                    = 0;
+  bool any_clicked     = false;
   uint64_t click_begin = 0;
   wl_list_for_each_reverse(head, &info->heads, link) {
     any_clicked = head->clicked || any_clicked;
-    if (head->click_begin > click_begin)
-      click_begin = head->click_begin;
+    if (head->click_begin > click_begin) click_begin = head->click_begin;
     if (head->hovered || tick < head->hover_begin + HOVER_USECS) {
       float *tri_ptr = res->verts + j++ * BT_COLOR_QUAD_SIZE;
-      float x1 = head->x1;
-      float y1 = head->y1;
-      float x2 = head->x2;
-      float y2 = head->y2;
+      float x1       = head->x1;
+      float y1       = head->y1;
+      float x2       = head->x2;
+      float y2       = head->y2;
 
       float *color = info->selection_color;
-      float d = fminf((tick - head->hover_begin) / (double)HOVER_USECS, 1.f);
-      if (!head->hovered)
-        d = 1.f - d;
+      float d      = fminf((tick - head->hover_begin) / (double)HOVER_USECS, 1.f);
+      if (!head->hovered) d = 1.f - d;
       float alpha = color[3] * ease(d) * .5f;
 
       PUSH_POINT_COLOR(tri_ptr, x1, y1, color, alpha)
@@ -376,8 +343,7 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
       tri_verts += 6;
     }
     i++;
-    if (i >= HEADS_MAX)
-      break;
+    if (i >= HEADS_MAX) break;
   }
 
   if (tri_verts > 0) {
@@ -385,15 +351,12 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glUseProgram(res->color_program);
     glBindBuffer(GL_ARRAY_BUFFER, res->buffers[COLOR_BUFFER]);
-    glBufferSubData(GL_ARRAY_BUFFER, 0,
-                    tri_verts * BT_COLOR_VERT_SIZE * sizeof(float), res->verts);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, tri_verts * BT_COLOR_VERT_SIZE * sizeof(float), res->verts);
     glEnableVertexAttribArray(res->color_position_attribute);
     glEnableVertexAttribArray(res->color_color_attribute);
-    glVertexAttribPointer(res->color_position_attribute, 2, GL_FLOAT, GL_FALSE,
-                          BT_COLOR_VERT_SIZE * sizeof(float),
+    glVertexAttribPointer(res->color_position_attribute, 2, GL_FLOAT, GL_FALSE, BT_COLOR_VERT_SIZE * sizeof(float),
                           (void *)(0 * sizeof(float)));
-    glVertexAttribPointer(res->color_color_attribute, 4, GL_FLOAT, GL_FALSE,
-                          BT_COLOR_VERT_SIZE * sizeof(float),
+    glVertexAttribPointer(res->color_color_attribute, 4, GL_FLOAT, GL_FALSE, BT_COLOR_VERT_SIZE * sizeof(float),
                           (void *)(2 * sizeof(float)));
     glUniform2fv(res->color_screen_size_uniform, 1, screen_size);
     glDrawArrays(GL_TRIANGLES, 0, tri_verts);
@@ -401,8 +364,8 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
   }
 
   unsigned int line_verts = 0;
-  i = 0;
-  float *line_ptr = res->verts;
+  i                       = 0;
+  float *line_ptr         = res->verts;
   if (any_clicked || (click_begin && tick < click_begin + HOVER_USECS)) {
     const float ox = -info->scroll_x - info->x_origin;
     const float oy = -info->scroll_y - info->y_origin;
@@ -412,8 +375,7 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
     float color[4];
     lerp_color(color, info->selection_color, info->fg_color, .5f);
     float d = fminf((tick - click_begin) / (double)HOVER_USECS, 1.f);
-    if (!any_clicked)
-      d = 1.f - d;
+    if (!any_clicked) d = 1.f - d;
     float alpha = color[3] * ease(d) * .5f;
 
     PUSH_POINT_COLOR(line_ptr, ox, oy, color, alpha)
@@ -430,7 +392,7 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
     float y2 = head->y2;
 
     float *color = info->fg_color;
-    float alpha = color[3] * (head->clicked ? .5f : .25f);
+    float alpha  = color[3] * (head->clicked ? .5f : .25f);
 
     PUSH_POINT_COLOR(line_ptr, x1, y1, color, alpha)
     PUSH_POINT_COLOR(line_ptr, x2, y1, color, alpha)
@@ -445,8 +407,7 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
 
     if (any_clicked || (click_begin && tick < click_begin + HOVER_USECS)) {
       float d = fminf((tick - click_begin) / (double)HOVER_USECS, 1.f);
-      if (!any_clicked)
-        d = 1.f - d;
+      if (!any_clicked) d = 1.f - d;
       alpha = color[3] * ease(d) * (head->clicked ? .15f : .075f);
 
       const float sx = screen_size[0];
@@ -476,8 +437,7 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
     }
 
     i++;
-    if (i >= HEADS_MAX)
-      break;
+    if (i >= HEADS_MAX) break;
   }
 
   if (line_verts > 0) {
@@ -485,15 +445,12 @@ void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glUseProgram(res->color_program);
     glBindBuffer(GL_ARRAY_BUFFER, res->buffers[LINE_BUFFER]);
-    glBufferSubData(GL_ARRAY_BUFFER, 0,
-                    line_verts * BT_LINE_VERT_SIZE * sizeof(float), res->verts);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, line_verts * BT_LINE_VERT_SIZE * sizeof(float), res->verts);
     glEnableVertexAttribArray(res->color_position_attribute);
     glEnableVertexAttribArray(res->color_color_attribute);
-    glVertexAttribPointer(res->color_position_attribute, 2, GL_FLOAT, GL_FALSE,
-                          BT_LINE_VERT_SIZE * sizeof(float),
+    glVertexAttribPointer(res->color_position_attribute, 2, GL_FLOAT, GL_FALSE, BT_LINE_VERT_SIZE * sizeof(float),
                           (void *)(0 * sizeof(float)));
-    glVertexAttribPointer(res->color_color_attribute, 4, GL_FLOAT, GL_FALSE,
-                          BT_LINE_VERT_SIZE * sizeof(float),
+    glVertexAttribPointer(res->color_color_attribute, 4, GL_FLOAT, GL_FALSE, BT_LINE_VERT_SIZE * sizeof(float),
                           (void *)(2 * sizeof(float)));
     glUniform2fv(res->color_screen_size_uniform, 1, screen_size);
     glDrawArrays(GL_LINES, 0, line_verts);
