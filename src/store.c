@@ -9,7 +9,6 @@
 #include <wayland-client-protocol.h>
 
 #define MAX_NAME_LENGTH 256
-#define MAX_MONITORS_NUM 10
 
 struct wd_head_config;
 struct profile_line {
@@ -194,13 +193,13 @@ int wd_store_config(struct wl_list *outputs) {
   char tmp_file_name[PATH_MAX];
   sprintf(tmp_file_name, "%s.tmp", file_name);
 
-  char *descriptions[MAX_MONITORS_NUM];
-  for (int i = 0; i < MAX_MONITORS_NUM; i++) {
+  char *descriptions[HEADS_MAX];
+  for (int i = 0; i < HEADS_MAX; i++) {
     descriptions[i] = NULL;
   }
 
-  char *outputConfigs[MAX_MONITORS_NUM];
-  for (int i = 0; i < MAX_MONITORS_NUM; i++) {
+  char *outputConfigs[HEADS_MAX];
+  for (int i = 0; i < HEADS_MAX; i++) {
     outputConfigs[i] = (char *)malloc(MAX_NAME_LENGTH);
   }
 
@@ -238,7 +237,7 @@ int wd_store_config(struct wl_list *outputs) {
       break;
     }
 
-    if (description_index < MAX_MONITORS_NUM) {
+    if (description_index < HEADS_MAX) {
       descriptions[description_index] = strdup(head->description);
       // write output config in given format
       sprintf(outputConfigs[description_index],
@@ -251,7 +250,7 @@ int wd_store_config(struct wl_list *outputs) {
     } else {
       free(trans_str);
       dprintf(2, "Too many monitor!\n\t%i is the maximum allowed number",
-              MAX_MONITORS_NUM);
+              HEADS_MAX);
       return 1;
     }
 
