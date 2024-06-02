@@ -209,31 +209,31 @@ int wd_store_config(struct wl_list *outputs) {
     struct wd_head *head = output->head;
 
     // for transform
-    char *trans_str = (char *)malloc(15 * sizeof(char));
+    char* trans_str;
     switch (output->transform) {
     case WL_OUTPUT_TRANSFORM_NORMAL:
-      strcpy(trans_str, "normal");
+      trans_str = "normal";
       break;
     case WL_OUTPUT_TRANSFORM_90:
-      strcpy(trans_str, "90");
+      trans_str = "90";
       break;
     case WL_OUTPUT_TRANSFORM_180:
-      strcpy(trans_str, "180");
+      trans_str = "180";
       break;
     case WL_OUTPUT_TRANSFORM_270:
-      strcpy(trans_str, "270");
+      trans_str = "270";
       break;
     case WL_OUTPUT_TRANSFORM_FLIPPED_90:
-      strcpy(trans_str, "flipped-90");
+      trans_str = "flipped-90";
       break;
     case WL_OUTPUT_TRANSFORM_FLIPPED_180:
-      strcpy(trans_str, "flipped-180");
+      trans_str = "flipped-180";
       break;
     case WL_OUTPUT_TRANSFORM_FLIPPED_270:
-      strcpy(trans_str, "flipped-270");
+      trans_str = "flipped-270";
       break;
     default:
-      strcpy(trans_str, "normal");
+      trans_str = "normal";
       break;
     }
 
@@ -248,13 +248,10 @@ int wd_store_config(struct wl_list *outputs) {
               trans_str);
       description_index++;
     } else {
-      free(trans_str);
       dprintf(2, "Too many monitor!\n\t%i is the maximum allowed number",
               HEADS_MAX);
       return 1;
     }
-
-    free(trans_str);
   }
 
   int num_of_monitors = description_index;
