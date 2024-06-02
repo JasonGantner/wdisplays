@@ -14,7 +14,7 @@
 
 #include "config.h"
 
-#define HEADS_MAX 64
+#define HEADS_MAX   64
 #define HOVER_USECS (100 * 1000)
 
 #include <stdbool.h>
@@ -110,10 +110,12 @@ struct wd_head {
 
   bool enabled;
   struct wd_mode *mode;
+
   struct {
     int32_t width, height;
     int32_t refresh;
   } custom_mode;
+
   int32_t x, y;
   enum wl_output_transform transform;
   double scale;
@@ -242,14 +244,12 @@ void wd_fatal_error(int status, const char *message);
 /*
  * Add an output to the list of screen captured outputs.
  */
-void wd_add_output(struct wd_state *state, struct wl_output *wl_output,
-                   struct wl_display *display);
+void wd_add_output(struct wd_state *state, struct wl_output *wl_output, struct wl_display *display);
 
 /*
  * Remove an output from the list of screen captured outputs.
  */
-void wd_remove_output(struct wd_state *state, struct wl_output *wl_output,
-                      struct wl_display *display);
+void wd_remove_output(struct wd_state *state, struct wl_output *wl_output, struct wl_display *display);
 
 /*
  * Finds the output associated with a given head. Can return NULL if the head's
@@ -264,14 +264,12 @@ struct wd_head *wd_find_head(struct wd_state *state, struct wd_output *output);
 /*
  * Starts listening for output management events from the compositor.
  */
-void wd_add_output_management_listener(struct wd_state *state,
-                                       struct wl_display *display);
+void wd_add_output_management_listener(struct wd_state *state, struct wl_display *display);
 
 /*
  * Sends updated display configuration back to the compositor.
  */
-void wd_apply_state(struct wd_state *state, struct wl_list *new_outputs,
-                    struct wl_display *display);
+void wd_apply_state(struct wd_state *state, struct wl_list *new_outputs, struct wl_display *display);
 
 /*
  * Queues capture of the next frame of all screens.
@@ -319,8 +317,7 @@ struct wd_gl_data *wd_gl_setup(void);
 /*
  * Renders the GL scene.
  */
-void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info,
-                  uint64_t tick);
+void wd_gl_render(struct wd_gl_data *res, struct wd_render_data *info, uint64_t tick);
 
 /*
  * Destroys the GL shaders.
