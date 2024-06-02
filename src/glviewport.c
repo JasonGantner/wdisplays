@@ -4,8 +4,8 @@
 #include "glviewport.h"
 
 typedef struct _WdGLViewportPrivate {
-  GtkAdjustment  *hadjustment;
-  GtkAdjustment  *vadjustment;
+  GtkAdjustment *hadjustment;
+  GtkAdjustment *vadjustment;
   guint hscroll_policy : 1;
   guint vscroll_policy : 1;
 } WdGLViewportPrivate;
@@ -18,14 +18,14 @@ enum {
   PROP_VSCROLL_POLICY
 };
 
-static void wd_gl_viewport_set_property(
-    GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec);
-static void wd_gl_viewport_get_property(
-    GObject *object, guint prop_id, GValue *value, GParamSpec *pspec);
+static void wd_gl_viewport_set_property(GObject *object, guint prop_id,
+                                        const GValue *value, GParamSpec *pspec);
+static void wd_gl_viewport_get_property(GObject *object, guint prop_id,
+                                        GValue *value, GParamSpec *pspec);
 
 G_DEFINE_TYPE_WITH_CODE(WdGLViewport, wd_gl_viewport, GTK_TYPE_GL_AREA,
-    G_ADD_PRIVATE(WdGLViewport)
-    G_IMPLEMENT_INTERFACE(GTK_TYPE_SCROLLABLE, NULL))
+                        G_ADD_PRIVATE(WdGLViewport)
+                            G_IMPLEMENT_INTERFACE(GTK_TYPE_SCROLLABLE, NULL))
 
 static void wd_gl_viewport_class_init(WdGLViewportClass *class) {
   GObjectClass *gobject_class = G_OBJECT_CLASS(class);
@@ -33,14 +33,18 @@ static void wd_gl_viewport_class_init(WdGLViewportClass *class) {
   gobject_class->set_property = wd_gl_viewport_set_property;
   gobject_class->get_property = wd_gl_viewport_get_property;
 
-  g_object_class_override_property(gobject_class, PROP_HADJUSTMENT, "hadjustment");
-  g_object_class_override_property(gobject_class, PROP_VADJUSTMENT, "vadjustment");
-  g_object_class_override_property(gobject_class, PROP_HSCROLL_POLICY, "hscroll-policy");
-  g_object_class_override_property(gobject_class, PROP_VSCROLL_POLICY, "vscroll-policy");
+  g_object_class_override_property(gobject_class, PROP_HADJUSTMENT,
+                                   "hadjustment");
+  g_object_class_override_property(gobject_class, PROP_VADJUSTMENT,
+                                   "vadjustment");
+  g_object_class_override_property(gobject_class, PROP_HSCROLL_POLICY,
+                                   "hscroll-policy");
+  g_object_class_override_property(gobject_class, PROP_VSCROLL_POLICY,
+                                   "vscroll-policy");
 }
 
 static void viewport_set_adjustment(GtkAdjustment *adjustment,
-    GtkAdjustment **store) {
+                                    GtkAdjustment **store) {
   if (!adjustment) {
     adjustment = gtk_adjustment_new(0., 0., 0., 0., 0., 0.);
   }
@@ -53,8 +57,9 @@ static void viewport_set_adjustment(GtkAdjustment *adjustment,
   }
 }
 
-static void wd_gl_viewport_set_property(
-    GObject *object, guint prop_id, const GValue *value, GParamSpec *pspec) {
+static void wd_gl_viewport_set_property(GObject *object, guint prop_id,
+                                        const GValue *value,
+                                        GParamSpec *pspec) {
   WdGLViewport *viewport = WD_GL_VIEWPORT(object);
   WdGLViewportPrivate *priv = wd_gl_viewport_get_instance_private(viewport);
 
@@ -74,7 +79,7 @@ static void wd_gl_viewport_set_property(
   case PROP_VSCROLL_POLICY:
     if (priv->vscroll_policy != g_value_get_enum(value)) {
       priv->vscroll_policy = g_value_get_enum(value);
-      g_object_notify_by_pspec (object, pspec);
+      g_object_notify_by_pspec(object, pspec);
     }
     break;
   default:
@@ -83,8 +88,8 @@ static void wd_gl_viewport_set_property(
   }
 }
 
-static void wd_gl_viewport_get_property(
-    GObject *object, guint prop_id, GValue *value, GParamSpec *pspec) {
+static void wd_gl_viewport_get_property(GObject *object, guint prop_id,
+                                        GValue *value, GParamSpec *pspec) {
   WdGLViewport *viewport = WD_GL_VIEWPORT(object);
   WdGLViewportPrivate *priv = wd_gl_viewport_get_instance_private(viewport);
 
@@ -107,8 +112,7 @@ static void wd_gl_viewport_get_property(
   }
 }
 
-static void wd_gl_viewport_init(WdGLViewport *viewport) {
-}
+static void wd_gl_viewport_init(WdGLViewport *viewport) {}
 
 GtkWidget *wd_gl_viewport_new(void) {
   return gtk_widget_new(WD_TYPE_GL_VIEWPORT, NULL);

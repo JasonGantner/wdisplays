@@ -17,7 +17,9 @@ struct profile_line {
   int end;
 };
 
-char *get_config_file_path() {
+typedef enum { Looking_for_profile, Looking_for_outputs, Found } parser_states;
+
+char *wd_get_config_file_path() {
   char kanshiConfigPath[PATH_MAX];
   char wdisplaysPath[PATH_MAX];
   char defaultConfigDir[PATH_MAX];
@@ -27,7 +29,9 @@ char *get_config_file_path() {
     if (configDir == NULL) { // fallback to $HOME
       configDir = getenv("HOME");
       if (configDir == NULL) {
-        perror("Cannot find home directory");
+        dprintf(
+            2, "%s:%i:%s(): Cannot find $XDG_CONFIG_HOME nor $HOME directories",
+            __FILE__, __LINE__, __func__);
         return NULL;
       } else {
         // configdir is $HOME/config
@@ -58,7 +62,7 @@ char *get_config_file_path() {
         char *pathStart = strchr(line, '=');
         if (pathStart != NULL) {
           pathStart++; // skip '='
-          while (*pathStart == ' ')
+          while (isspace(*pathStart))
             pathStart++; // skip spaces between '=' and the start of the path
           char *pathEnd = strchr(
               pathStart, '\n'); // this fails if store_path is the last line and
@@ -78,8 +82,12 @@ char *get_config_file_path() {
         ; // this line does not contain store_path
     }     // reached end of file
     fclose(wdisplaysFile);
-  } else
-    ; // can't open config file, continue
+  } else {
+    // can't open config file
+    dprintf(2, "%s:%i:%s(): Can't open %s : ", __FILE__, __LINE__, __func__,
+            wdisplaysPath);
+    perror(NULL);
+  }
 
   // look for WDISPLAYS_KANSHI_CONFIG
   {
@@ -89,95 +97,100 @@ char *get_config_file_path() {
     else
       ;
   }
-  return strndup(kanshiConfigPath, PATH_MAX);
+  char *finalPath = strndup(kanshiConfigPath, PATH_MAX);
+  if (finalPath == NULL) {
+    dprintf(2, "%s:%i:%s(): ", __FILE__, __LINE__, __func__);
+    perror("Failed to allocate memory for kanshi config path");
+  }
+  return finalPath;
 }
 
-struct profile_line match(char **descriptions, int num, char *filename) {
+struct profile_line match(char **descriptions, int num, const char *filename) {
   struct profile_line matched_profile;
   matched_profile.start = -1;
   matched_profile.end = -1;
   // -1 means not found
   FILE *configFile = fopen(filename, "r");
   if (configFile == NULL) {
-    perror("File open failed.");
+    dprintf(2, "%s:%i:%s(): Can't open %s : ", __FILE__, __LINE__, __func__,
+            filename);
+    perror(NULL);
     return matched_profile;
   }
   // buffer to store each line
   char buffer[LINE_MAX];
-  char profileName[MAX_NAME_LENGTH];
+  char *profileName;
   int profileStartLine = 0; // mark the start line of matched profile
   int profileEndLine = 0;   // mark the end line of matched profile
 
-  int lineCount = 0; // current line number
-
-  while (fgets(buffer, sizeof(buffer), configFile) != NULL) {
+  int lineCount = 0;                      // current line number
+  uint32_t profileMatchedNum = 0;         // current number of matched outputs
+  parser_states ps = Looking_for_profile; // current state of the parser
+  while (ps != Found && fgets(buffer, sizeof(buffer), configFile) != NULL) {
     lineCount++;
+    switch (ps) {
+    case Found:
+      break; // unreachable code
 
-    // check if "profile" keyword is in the line
-    if (strstr(buffer, "profile") != NULL) {
-      // extract profile name
-      sscanf(buffer, "profile %s {", profileName);
-
-      // the number of matched outputs
-      uint32_t profileMatchedNum = 0;
-
-      // record the start line of the profile
-      profileStartLine = lineCount;
-
-      while (fgets(buffer, sizeof(buffer), configFile) != NULL) {
-        lineCount++;
-
-        // check if the profile ends
-        if (buffer[0] == '}') {
-          profileEndLine = lineCount;
-          break;
+    case Looking_for_profile:;
+      // check if "profile" keyword is in the line and remember its position
+      char *pstart = strstr(buffer, "profile ");
+      if (pstart != NULL) {
+        pstart +=7;
+        char *pend = strchr(pstart, '{'); // find the end of the profile name
+        while (isspace(*pend)){
+          pend--;
         }
-        char outputName[MAX_NAME_LENGTH];
-        // 从当前行提取输出名称
-        char *trimmedBuffer = buffer;
-        while (isspace(*trimmedBuffer)) {
-          trimmedBuffer++; // skip leading spaces
-        }
-        sscanf(trimmedBuffer, "output \"%99[^\"]\"",
-               outputName); // extract output name
+        size_t pnsize = pend - pstart;
+        // use strndup to extract it without being size constrained
+        profileName = strndup(pstart, pnsize);
+        // record the start line of the profile
+        profileStartLine = lineCount;
+        ps = Looking_for_outputs;
+      }
+      break;
 
+    case Looking_for_outputs:
+      // check if the profile ends
+      if (buffer[0] == '}') {
+        profileEndLine = lineCount;
+        if (profileMatchedNum == num)
+          ps = Found;
+      } else {
+        char *on_start = strstr(buffer, "output");
+        on_start = strchr(on_start, '"');
+        on_start++;
+        char *on_end = strchr(on_start, '"');
+        char *outputName = strndup(on_start, on_end - on_start);
         // check if the output name is in the descriptions
-        bool matched = false;
-        for (int i = 0; descriptions[i] != NULL; i++) {
-          if (strcmp(outputName, descriptions[i]) == 0) {
-            matched = true;
-            profileMatchedNum++;
-            break;
-          }
-        }
-
-        if (!matched) {
+        int i = 0;
+        while (descriptions[i] != NULL && strcmp(outputName, descriptions[i]))
+          i++;
+        if (descriptions[i] != NULL) {
+          profileMatchedNum++;
+        } else {
           // if any output is not matched, break
           profileMatchedNum = 0;
-          break;
+          ps = Looking_for_profile;
         }
       }
-
-      if (profileMatchedNum == num) {
-        printf("Matched profile:%s\n", profileName);
-        printf("Start line:%d\n", profileStartLine);
-        matched_profile.start = profileStartLine;
-        printf("End line:%d\n", profileEndLine);
-        matched_profile.end = profileEndLine;
-
-        fclose(configFile);
-        return matched_profile;
-      }
+      break;
     }
   }
-
   fclose(configFile);
-  printf("Cannot find existing profile to match\n");
+  if (ps == Found) {
+    printf("Matched profile:%s\n", profileName);
+    printf("Start line:%d\nEnd line:%d\n", profileStartLine, profileEndLine);
+    matched_profile.start = profileStartLine;
+    matched_profile.end = profileEndLine;
+  } else
+    dprintf(2, "%s:%i:%s(): Cannot find existing profile to match\n", __FILE__,
+            __LINE__, __func__);
   return matched_profile;
 }
 
-int store_config(struct wl_list *outputs) {
-  char *file_name = get_config_file_path();
+int wd_store_config(struct wl_list *outputs) {
+  const char *file_name = wd_get_kanshi_config();
   char tmp_file_name[PATH_MAX];
   sprintf(tmp_file_name, "%s.tmp", file_name);
 
@@ -237,7 +250,8 @@ int store_config(struct wl_list *outputs) {
       description_index++;
     } else {
       free(trans_str);
-      printf("Too many monitor! 10 is the");
+      dprintf(2, "Too many monitor!\n\t%i is the maximum allowed number",
+              MAX_MONITORS_NUM);
       return 1;
     }
 
@@ -253,8 +267,9 @@ int store_config(struct wl_list *outputs) {
     // append new profile
     FILE *file = fopen(file_name, "a");
     if (file == NULL) {
-      perror("File open failed.");
-      free(file_name);
+      dprintf(2, "%s:%i:%s(): Can't open %s : ", __FILE__, __LINE__, __func__,
+              file_name);
+      perror(NULL);
       return 1;
     }
     fprintf(file, "\nprofile {\n");
@@ -269,14 +284,14 @@ int store_config(struct wl_list *outputs) {
     FILE *file = fopen(file_name, "r");
     if (file == NULL) {
       perror("File open failed.");
-      free(file_name);
       return 1;
     }
     FILE *tmp = fopen(tmp_file_name, "w");
     if (tmp == NULL) {
-      perror("Tmp file cannot be created.");
+      dprintf(2, "%s:%i:%s(): Can't create %s : ", __FILE__, __LINE__, __func__,
+              tmp_file_name);
+      perror(NULL);
       fclose(file);
-      free(file_name);
       return 1;
     }
     char _buffer[LINE_MAX];
@@ -304,7 +319,6 @@ int store_config(struct wl_list *outputs) {
 
     remove(file_name);
     rename(tmp_file_name, file_name);
-    free(file_name);
   }
 
   return 0;
