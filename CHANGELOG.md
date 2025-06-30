@@ -10,7 +10,8 @@ This project tries to adhere to [Semantic Versioning][2].
 
 ### Changed
 
-Updated deprecated REUSE metadata to TOML (Jason Gantner)
+Updated deprecated REUSE metadata to TOML (Jason Gantner)  
+Support for saving kanshi config file
 
 ### Fixed
 
@@ -29,7 +30,6 @@ Updated deprecated GTK flags (Jason Gantner)
 C23 issues (Viorel Munteanu)  
 Scaling issues caused by GTK popover (aleksana)  
 Remove an unused var (Jason Gantner)
-
 
 ## [1.1.1] - 2023-07-01
 
