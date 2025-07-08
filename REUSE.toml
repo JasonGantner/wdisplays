@@ -1,0 +1,40 @@
+version = 1
+SPDX-PackageName = "wdisplays"
+SPDX-PackageSupplier = "Jason Francis <jason@cycles.network>"
+# SPDX-PackageDownloadLocation = "<https://cyclopsian.github.io/wdisplays>"
+
+[[annotations]]
+path = ["README.md", ".gitignore"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Jason Francis <jason@cycles.network>"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = ["resources/style.css", "resources/wdisplays.desktop.in", "resources/**.ui", "resources/resources.xml.in"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Jason Francis <jason@cycles.network>"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = ["wdisplays.png", "resources/wdisplays.svg"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2020 Jason Francis <jason@cycles.network>"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = "protocol/wlr-layer-shell-unstable-v1.xml"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2017 Drew DeVault"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "protocol/wlr-output-management-unstable-v1.xml"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2019 Purism SPC"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "protocol/wlr-screencopy-unstable-v1.xml"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2018 Simon Ser"
+SPDX-License-Identifier = "MIT"
